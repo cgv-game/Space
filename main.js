@@ -139,6 +139,8 @@ var stepy = 0;
 var clock = new THREE.Clock();
 
 
+
+
 //This function is for Animation
 function renderScene(){
     //Make updates to positions, rotation of objects in the scene
@@ -146,6 +148,12 @@ function renderScene(){
     stepy += 0.00005;
     var delta = clock.getDelta();
     donut.rotation.y += 0.01;
+	
+particles.rotation.y = Date.now() * 0.00005;//keep rotating particles				
+var time = Date.now() * 0.0005;
+h = ( 360 * ( 1.0 + time ) % 360 ) / 360;
+material.color.setHSL( h, 0.5, 0.5 );
+renderer.render( scene, camera );
 
     //camera.position.x = 60*Math.cos(step);
     //camera.position.z = 60*Math.sin(step);
