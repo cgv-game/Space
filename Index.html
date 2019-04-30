@@ -16,23 +16,30 @@
 		<script src="http://threejsplaygnd.brangerbriz.net/js/Detector.js"></script>
 		<script src="three.min.js"></script>
 		<script src="three.js"></script>
-		<script src="main.js"></script>
+		<script src="physijs_worker.js"></script>
+		<script src="physi.js"></script>
+		<script type="text/javascript" src="PointerLockControlss.js"></script>
+		<script type="text/javascript" src="./js/TrackballControls.js"></script>
+		<script type="text/javascript" src="./js/Three.FirstPersonControls.js"></script>
 		
 		<script>
 
 			if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 			
-			var camera, scene, renderer;
+			var camera, scene, plan, renderer;
 			var geometry, material, mesh;
 			
 
 			function setup() {
+				
+				Physijs.scripts.worker = "physijs_worker.js";
+				
 
 				var W = window.innerWidth, H = window.innerHeight;
 				renderer = new THREE.WebGLRenderer({
 				antialias: true
 				});
-				renderer.setClearColor( 0x444444 );
+				renderer.setClearColor( 0x000000 );
 				renderer.setSize( W, H );
 				document.body.appendChild( renderer.domElement );
 
@@ -43,7 +50,39 @@
 				
 				scene = new THREE.Scene();
 				
+				//add skybox
+				/* var textureURLs = [
+				"../texturez/skyboxes/spaceskyboxRT.png",   // Note:  The order in which
+				"../texturez/skyboxes/spaceskyboxLF.png",   //   the images are listed is
+				"../texturez/skyboxes/spaceskyboxUPg",
+				"../texturez/skyboxes/spaceskyboxDN.png",
+				"../texturez/skyboxes/spaceskyboxFT.png"
+				];
+	
+				var texture = loadCubemapTexture(textureURLs, render);
+
+				var shader = THREE.ShaderLib['cube']; // init cube shader from built-in lib
+				shader.uniforms['tCube'].value = cubemap; // apply textures to shader
+
+				// create shader material
+				skyBoxMaterial = new THREE.ShaderMaterial( {
+				fragmentShader: shader.fragmentShader,
+				vertexShader: shader.vertexShader,
+				uniforms: shader.uniforms,
+				depthWrite: false,
+				side: THREE.DoubleSide
+				});
+
+				//create skybox mesh
+				var skybox = new THREE.Mesh(
+				new THREE.CubeGeometry(1000, 1000, 1000),
+				skyBoxMaterial
+				);
+
+				scene.add(skybox);*/
+				
 				// Adding random plantes as obstacles
+				plan = new THREE.Scene();
 				for ( var i = 0; i < 20; i ++ ) {
 				map = THREE.ImageUtils.loadTexture('../water.jpg');
 				geometry = new THREE.SphereGeometry(200, 150, 150);
@@ -56,13 +95,15 @@
 				map: map, side: THREE.DoubleSide});
 				mesh = new THREE.Mesh(geometry, material);
 				map.wrapS = map.wrapT = THREE.RepeatWrapping;
-				map.repeat.set( 5.194412652169391, 5.194412652169391 );
+				map.repeat.set( 5, 5 );
 				mesh.scale.x = mesh.scale.y = mesh.scale.z = 0.1;
 				mesh.position.y = Math.random() * 1000 - 500;
 				mesh.position.x = Math.random() * 1000 - 500;
 				mesh.position.z = Math.random() * 1000 - 500;
-				scene.add(mesh);
+				plan.add(mesh);
 				}
+				
+				scene.add(plan);
 				
 				//Add some fog and light 
 				scene.fog = new THREE.Fog( 0xded768, 3088.75, 9000 );
@@ -86,37 +127,7 @@
 				
 				
 				
-			//add skybox
-   /* var textureURLs = [
-        "../texturez/skyboxes/spaceskyboxRT.png",   // Note:  The order in which
-        "../texturez/skyboxes/spaceskyboxLF.png",   //   the images are listed is
-        "../texturez/skyboxes/spaceskyboxUPg",
-        "../texturez/skyboxes/spaceskyboxDN.png",
-        "../texturez/skyboxes/spaceskyboxFT.png"
-   ];
-	
-	var texture = loadCubemapTexture(textureURLs, render);
-   T
-
-  var shader = THREE.ShaderLib['cube']; // init cube shader from built-in lib
-  shader.uniforms['tCube'].value = cubemap; // apply textures to shader
-
-// create shader material
-  skyBoxMaterial = new THREE.ShaderMaterial( {
-    fragmentShader: shader.fragmentShader,
-    vertexShader: shader.vertexShader,
-    uniforms: shader.uniforms,
-    depthWrite: false,
-    side: THREE.DoubleSide
-  });
-
-// create skybox mesh
-  var skybox = new THREE.Mesh(
-    new THREE.CubeGeometry(1000, 1000, 1000),
-    skyBoxMaterial
-  );
-
-  scene.add(skybox);*/
+			
 				
 				
 			
@@ -129,9 +140,10 @@
 
 				requestAnimationFrame( draw );
 				
-				particles.rotation.y = Date.now() * 0.00005;//keep rotating particles
-				
-				var time = Date.now() * 0.0005;
+				particles.rotation.y = Date.now() * 0.00005;  //keep rotating particles
+				plan.rotation.y=Date.now()* (-0.00005);
+				//CHange hue os particles
+				var time = Date.now() * 0.0000005;
 				h = ( 360 * ( 1.0 + time ) % 360 ) / 360;
 				material.color.setHSL( h, 0.5, 0.5 );
 
