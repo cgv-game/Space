@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<title>Spacecraft Game</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+       
+	
+</head>
+<body>
+
+
+<script src="js/three.js"></script>
+<script src="js/Detector.js"></script>
+<script src="js/THREEx.KeyboardState.js"></script>
+<script src="js/THREEx.FullScreen.js"></script>
+<script src="js/THREEx.WindowResize.js"></script>
+<script src='js/OBJLoader.js'></script>
+<script src='js/MTLLoader.js'></script>
+<script src='js/threex.spaceships.js'></script>
+
+
+
+
+<div id="ThreeJS" style="position: absolute; left:0px; top:0px"></div>
+<script>
+
+//MAIN
+// standard global variables
+var container, scene, renderer, controls, stats;
+var keyboard = new THREEx.KeyboardState();
+var clock = new THREE.Clock();
+
+// custom global variables
+var MovingCube;
+var chaseCamera, topCamera, Wcamera;
+var chaseCameraActive = true;
+
+
+var onRenderFcts= [];
+var FighterRotate01, FighterRotate02 , shipRotater03  ;
+var MovingCube;
+	
+
+
+init();
+AddLights();
+AddShips();
+animate();
+
+
+
+// FUNCTIONS 	
+
+
+	//////////////////////////////////////////////////////////////////////////////////
+	//		set 3 point lighting						//
+	//////////////////////////////////////////////////////////////////////////////////
+
+	function AddLights(){
+		var object3d	= new THREE.AmbientLight(0x101010*8)
+		object3d.name	= 'Ambient light'
+		scene.add(object3d)
+
+		var object3d	= new THREE.DirectionalLight('white', 0.225)
+		object3d.position.set(2.6,1,3)
+		object3d.name	= 'Back light'
+		scene.add(object3d)
+
+		var object3d	= new THREE.DirectionalLight('white', 0.375)
+		object3d.position.set(-2, -1, 0)
+		object3d.name 	= 'Key light'
+		scene.add(object3d)
+
+		var object3d	= new THREE.DirectionalLight('white', 0.5*1)
+		object3d.position.set(3, 3, 2)
+		object3d.name	= 'Fill light'
+		scene.add(object3d)		
+	}
+
+  
+	//////////////////////////////////////////////////////////////////////////////////
+	//		Add spaceships							//
+	//////////////////////////////////////////////////////////////////////////////////
+ function AddShips(){
+
+	THREEx.SpaceShips.loadSpaceFighter01(function(object3d){
+		object3d.position.x	= 0
+		object3d.position.y	=  0      
+                FighterRotater01 = new THREE.Object3D()
+                FighterRotater01.add(object3d)
+                FighterRotater01.name = 'FighterRotater01';
+                scene.add(FighterRotater01);
+               
+
+	})
+
+
+
+
+
+	THREEx.SpaceShips.loadSpaceFighter02(function(object3d){
+		object3d.position.x	= 0.8
+		object3d.position.y	= 0.4
+                FighterRotater02 = new THREE.Object3D()
+                FighterRotater02.add(object3d)
+                FighterRotater02.name = 'FighterRotater02';
+                scene.add(FighterRotater02)
+	})
+
+	
+	THREEx.SpaceShips.loadShuttle02(function(object3d){
+		object3d.position.x	=  0.6
+		object3d.position.y	= -0.3
+	        shipRotater03 = new THREE.Object3D()
+                shipRotater03.add(object3d)
+                shipRotater03.name = 'shipname03';
+                scene.add(shipRotater03)
+	})
+
+}
+
+
+	//////////////////////////////////////////////////////////////////////////////////
+	//		Camera that Controls the Whole Scene / World	via MOUSE       //
+	//////////////////////////////////////////////////////////////////////////////////
+
+   function MouseCameraControl(){
+	var mouse	= {x : 0, y : 0}
+	document.addEventListener('mousemove', function(event){
+		mouse.x	= (event.clientX / window.innerWidth ) - 0.5
+		mouse.y	= (event.clientY / window.innerHeight) - 0.5
+	}, false)
+	onRenderFcts.push(function(delta, now){
+		topCamera.position.x += (mouse.x*5 - topCamera.position.x) * (delta*3)
+		topCamera.position.y += (mouse.y*5 - topCamera.position.y) * (delta*3)
+		topCamera.lookAt( scene.position )
+                
+	})
+
+      }
+
+	//////////////////////////////////////////////////////////////////////////////////
+	//		Controls the shooting of the Spaceship                          //
+	//////////////////////////////////////////////////////////////////////////////////
+function onDocumentMouseDown( event ) 
+{
+	// the following line would stop any other event handler from firing
+	// (such as the mouse's TrackballControls)
+	// event.preventDefault();
+	
+	console.log("Click.");
+  
+        // the right shoot
+	var shoot	= new THREEx.SpaceShips.Shoot()
+	shoot.position.x= 0.2
+	shoot.position.z= 0.3
+        rightbulletshot = shoot;
+        //rightbulletshot.name = "rightbulletshot"
+	FighterRotater01.add(shoot)
+        //scene.add(rightbulletshot)
+ 
+
+	// the left shoot
+	var shoot	= new THREEx.SpaceShips.Shoot()
+	shoot.position.x=-0.2
+	shoot.position.z= 0.3
+        leftbulletshot = shoot;
+         leftbulletshot.alive = true;
+        //leftbulletshot.name = "leftbulletshot";
+	FighterRotater01.add(shoot)
+      
+
+	// the right detonation effect
+	var detonation	= new THREEx.SpaceShips.Detonation()
+	detonation.position.x= 0.2
+	detonation.position.z= 0.1
+        rightdetonation = detonation;
+        //detonation.name = "rightdetonation";
+	FighterRotater01.add(detonation)
+
+	// the left detonation effect
+	var detonation	= new THREEx.SpaceShips.Detonation()
+	detonation.position.x=-0.2
+	detonation.position.z= 0.1
+        leftdetonation = detonation;
+       // detonation.name = "leftdetonation";
+	FighterRotater01.add(detonation)
+
+
+
+        // sets bullet life time if no collision happened, in this case collisions are not coded
+        setTimeout(function (){
+                         rightbulletshot.alive = false;
+                         leftbulletshot.alive = false;
+                         FighterRotater01.remove(rightbulletshot);
+                         FighterRotater01.remove(leftbulletshot);
+                    }, 2000);
+       
+}
+
+ // on mouseUp the flares when shooting stop illuminating
+   function onDocumentMouseUp( event ){
+         FighterRotater01.remove(rightdetonation);
+         FighterRotater01.remove(leftdetonation);
+      }
+
+/***********Keyboard   W,S,A,D,Q,E,R,F   controls******************/
+function update_spaceship()
+{
+	var delta = clock.getDelta(); // seconds.
+	
+        var moveDistance = 10 * delta/30;  // This controls the speed of the controllabe spaceship,10 pixels per second ()/30
+	var rotateAngle = Math.PI / 6 * delta;   /*rotates (30 degrees) per second*/
+	
+	// local transformations
+
+	// move forwards/backwards/left/right
+	if ( keyboard.pressed("W") )
+		FighterRotater01.translateZ( -moveDistance );
+	if ( keyboard.pressed("S") )
+		FighterRotater01.translateZ(  moveDistance );
+	if ( keyboard.pressed("Q") )
+		FighterRotater01.translateX( -moveDistance );
+	if ( keyboard.pressed("E" ) )
+		FighterRotater01.translateX(  moveDistance );	
+
+	// rotate left/right/up/down
+	var rotation_matrix = new THREE.Matrix4().identity();
+	if ( keyboard.pressed("A") )
+		FighterRotater01.rotateOnAxis( new THREE.Vector3(0,1,0), rotateAngle);
+	if ( keyboard.pressed("D") )
+		FighterRotater01.rotateOnAxis( new THREE.Vector3(0,1,0), -rotateAngle);
+	if ( keyboard.pressed("R") )
+		FighterRotater01.rotateOnAxis( new THREE.Vector3(1,0,0), rotateAngle);
+	if ( keyboard.pressed("F") )
+		FighterRotater01.rotateOnAxis( new THREE.Vector3(1,0,0), -rotateAngle);
+	
+	if ( keyboard.pressed("Z") )
+	{
+		FighterRotater01.position.set(0,0,2);
+		FighterRotater01.rotation.set(0,0,0);
+	}
+
+
+// move forwards/backwards/left/right
+	if ( keyboard.pressed("W") )
+		FighterRotater01.translateZ( -moveDistance );
+	if ( keyboard.pressed("S") )
+		FighterRotater01.translateZ(  moveDistance );
+	if ( keyboard.pressed("Q") )
+		FighterRotater01.translateX( -moveDistance );
+	if ( keyboard.pressed("E") )
+		FighterRotater01.translateX(  moveDistance );	
+
+	// rotate left/right/up/down
+	var rotation_matrix = new THREE.Matrix4().identity();
+	if ( keyboard.pressed("A") )
+		FighterRotater01.rotateOnAxis( new THREE.Vector3(0,1,0), rotateAngle);
+	if ( keyboard.pressed("D") )
+		FighterRotater01.rotateOnAxis( new THREE.Vector3(0,1,0), -rotateAngle);
+	if ( keyboard.pressed("R") )
+		FighterRotater01.rotateOnAxis( new THREE.Vector3(1,0,0), rotateAngle);
+	if ( keyboard.pressed("F") )
+		FighterRotater01.rotateOnAxis( new THREE.Vector3(1,0,0), -rotateAngle);
+	
+	if ( keyboard.pressed("Z") )
+	{
+		FighterRotater01.position.set(0,0,0);
+		FighterRotater01.rotation.set(0,0,0);
+	}
+
+	 var relativeCameraOffset = new THREE.Vector3(0,1,-2);  //gives the best  view
+
+	var cameraOffset = relativeCameraOffset.applyMatrix4( FighterRotater01.matrixWorld );
+
+	chaseCamera.position.x = cameraOffset.x;
+	chaseCamera.position.y = cameraOffset.y;
+	chaseCamera.position.z = cameraOffset.z;
+	chaseCamera.lookAt(FighterRotater01.position);
+
+         
+	if ( keyboard.pressed("1") )
+	 {  
+            chaseCameraActive = true; 
+         }
+	if ( keyboard.pressed("2") )
+	  {
+              chaseCameraActive = false;
+          }
+
+}
+	
+function init() 
+{
+	// SCENE
+	scene = new THREE.Scene();
+
+        /*****CHANGE SCENE BACKGROUND COLOR**************/
+        /*var color = new THREE.Color( 'darkblue' );
+        scene.background = color;*/
+
+	var imagePrefix = "images/nebula-";
+	var directions  = ["xpos", "xneg", "ypos", "yneg", "zpos", "zneg"];
+	var imageSuffix = ".png";
+	var skyGeometry = new THREE.CubeGeometry( 10000, 10000, 10000 );	
+	
+	var imageURLs = [];
+	for (var i = 0; i < 6; i++)
+		imageURLs.push( imagePrefix + directions[i] + imageSuffix );
+	var textureCube = THREE.ImageUtils.loadTextureCube( imageURLs );
+	var shader = THREE.ShaderLib[ "cube" ];
+	shader.uniforms[ "tCube" ].value = textureCube;
+	var skyMaterial = new THREE.ShaderMaterial( {
+		fragmentShader: shader.fragmentShader,
+		vertexShader: shader.vertexShader,
+		uniforms: shader.uniforms,
+		depthWrite: false,
+		side: THREE.BackSide
+	} );
+	var skyBox = new THREE.Mesh( skyGeometry, skyMaterial );
+	scene.add( skyBox );
+
+
+
+
+
+	// CAMERA
+	var SCREEN_WIDTH = window.innerWidth, SCREEN_HEIGHT = window.innerHeight;
+	var VIEW_ANGLE = 45, ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT, NEAR = 0.01, FAR = 20000;
+
+	// camera 1
+	topCamera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR);
+	scene.add(topCamera);
+	topCamera.position.set(0,0,2);
+	topCamera.lookAt(scene.position);
+	// camera 2
+	chaseCamera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.01, 20000);
+	scene.add(chaseCamera);
+
+
+	// RENDERER
+	if ( Detector.webgl )
+		renderer = new THREE.WebGLRenderer( {antialias:true} );
+	else
+		renderer = new THREE.CanvasRenderer(); 
+
+	renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+        document.body.appendChild( renderer.domElement );
+	container = document.getElementById( 'ThreeJS' );
+	container.appendChild( renderer.domElement );
+	// EVENTS
+	THREEx.WindowResize(renderer, topCamera);
+	THREEx.FullScreen.bindKey({ charCode : 'm'.charCodeAt(0) });
+
+        document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+        document.addEventListener( 'mouseup', onDocumentMouseUp, false );
+
+
+
+	//var sphereGeo = new THREE.SphereGeometry(0.054,  0.9, 0);
+
+     var sphereGeo = new THREE.SphereGeometry(0.054,  0.9, 0);
+	var moonTexture = THREE.ImageUtils.loadTexture( 'images/moon.jpg' );
+	var moonMaterial = new THREE.MeshBasicMaterial( { map: moonTexture } );
+    var moon = new THREE.Mesh(sphereGeo, moonMaterial);
+    moon.position.x	= 0.7
+    moon.position.y	=  0 
+    scene.add(moon);
+
+     var sphereGeo = new THREE.SphereGeometry(0.054,  0.9, 0);
+	var moonTexture = THREE.ImageUtils.loadTexture( 'images/moon.jpg' );
+	var moonMaterial = new THREE.MeshBasicMaterial( { map: moonTexture } );
+    var moon = new THREE.Mesh(sphereGeo, moonMaterial);
+    moon.position.x	= -0.7
+    moon.position.y	=  0 
+    scene.add(moon);
+
+
+     var sphereGeo = new THREE.SphereGeometry(0.054,  0.9, 0);
+	var moonTexture = THREE.ImageUtils.loadTexture( 'images/moon.jpg' );
+	var moonMaterial = new THREE.MeshBasicMaterial( { map: moonTexture } );
+    var moon = new THREE.Mesh(sphereGeo, moonMaterial);
+    moon.position.x	= -0.7
+    moon.position.y	=  0.3
+    scene.add(moon);
+
+
+     var sphereGeo = new THREE.SphereGeometry(0.054,  0.9, 0);
+	var moonTexture = THREE.ImageUtils.loadTexture( 'images/moon.jpg' );
+	var moonMaterial = new THREE.MeshBasicMaterial( { map: moonTexture } );
+    var moon = new THREE.Mesh(sphereGeo, moonMaterial);
+    moon.position.x	= 0.7
+    moon.position.y	=  -0.4 
+    scene.add(moon);
+
+
+     var sphereGeo = new THREE.SphereGeometry(0.054,  0.9, 0);
+	var moonTexture = THREE.ImageUtils.loadTexture( 'images/moon.jpg' );
+	var moonMaterial = new THREE.MeshBasicMaterial( { map: moonTexture } );
+    var moon = new THREE.Mesh(sphereGeo, moonMaterial);
+    moon.position.x	= 0.5
+    moon.position.y	=  0.5 
+    moon.position.z	=  -0.9
+    scene.add(moon);
+
+     var sphereGeo = new THREE.SphereGeometry(0.054,  0.9, 0);
+	var moonTexture = THREE.ImageUtils.loadTexture( 'images/moon.jpg' );
+	var moonMaterial = new THREE.MeshBasicMaterial( { map: moonTexture } );
+    var moon = new THREE.Mesh(sphereGeo, moonMaterial);
+    moon.position.x	= -0.7
+    moon.position.y	=  0.3 
+      moon.position.z	=  -1
+    scene.add(moon);
+
+    var sphereGeo = new THREE.SphereGeometry(0.056,  0.9, 0);
+	var moonTexture = THREE.ImageUtils.loadTexture( 'images/moon.jpg' );
+	var moonMaterial = new THREE.MeshBasicMaterial( { map: moonTexture } );
+    var moon = new THREE.Mesh(sphereGeo, moonMaterial);
+    moon.position.x	= 0.7
+    moon.position.y	= 0.8 
+      moon.position.z	=  -1
+    scene.add(moon);
+
+     var sphereGeo = new THREE.SphereGeometry(0.054,  0.9, 0);
+	var moonTexture = THREE.ImageUtils.loadTexture( 'images/moon.jpg' );
+	var moonMaterial = new THREE.MeshBasicMaterial( { map: moonTexture } );
+    var moon = new THREE.Mesh(sphereGeo, moonMaterial);
+    moon.position.x	= -0.5
+    moon.position.y	=  -0.6
+     moon.position.z	=  -0.6
+    scene.add(moon);
+
+
+     var sphereGeo = new THREE.SphereGeometry(0.054,  0.9, 0);
+	var moonTexture = THREE.ImageUtils.loadTexture( 'images/moon.jpg' );
+	var moonMaterial = new THREE.MeshBasicMaterial( { map: moonTexture } );
+    var moon = new THREE.Mesh(sphereGeo, moonMaterial);
+    moon.position.x	= 0.9
+    moon.position.y	=  -0.4 
+ moon.position.z	=  -0.2
+    scene.add(moon);
+}
+
+	//////////////////////////////////////////////////////////////////////////////////
+	//		Animate the scene						//
+	/////////////////////////////////////////////////////////////////////////////////
+function animate() 
+{
+    requestAnimationFrame( animate );
+        update_spaceship();
+	Render();		
+     
+}
+
+	//////////////////////////////////////////////////////////////////////////////////
+	//		render the scene						//
+	//////////////////////////////////////////////////////////////////////////////////
+function Render() 
+{  
+           // rotate uncontrollabe spaceship
+        FighterRotater02.rotation.y -= 0.01;
+        shipRotater03.rotation.y -= 0.01;
+         //renderer.setClearColor( 0xffffff, 0);
+         
+	if (  chaseCameraActive )
+           {renderer.render( scene, chaseCamera );
+           } 
+         
+         else {renderer.render( scene, topCamera );}
+
+   // speed of the bullets
+        rightbulletshot.translateX(-0.07);
+        leftbulletshot.translateX(-0.07);
+  
+
+
+
+
+}
+
+</script>
+
+</body>
+</html>
